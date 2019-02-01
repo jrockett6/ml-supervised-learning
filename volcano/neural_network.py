@@ -1,56 +1,70 @@
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+import os
 
 import numpy as np 
-import tensorflow as tf 
-from tensorflow import keras
+from sklearn.metrics import confusion_matrix
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LeakyReLU
+from keras.optimizers import Adam
 from manage_data import *
+from math import sqrt
+
+# os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
+def prepare_data():
+	if not os.path.isfile("train_test_data_nn.pkl"):
+		load_data(nn=True)
+
+	x_train, y_train, x_test, y_test= read_data(nn=True)
+
+	x_train = x_train/255
+	y_train = np.array(y_train)
+
+	x_test = x_test/255
+	y_test = np.array(y_test)
+
+	return x_train, y_train, x_test, y_test
 
 
+def train_model(x_train, y_train, trials=1):
+	model = Sequential()
+	model.add(Dense(units=55, input_dim=3025))
+	model.add(Dense(units=30))
+	model.add(LeakyReLU(alpha = 0.01))
+	model.add(Dense(units=2, activation='softmax'))
 
-# fashion_mnist = keras.datasets.fashion_mnist
+	model.compile(Adam(), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-# (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+	model.fit(x_train, y_train, epochs=trials)
 
-# class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+	return model
 
-
-#Create model, Sequential NN
-# model = keras.Sequential([
-#     keras.layers.Flatten(input_shape=(28, 28)), #reformats first layer into single 1d flat array
-#     keras.layers.Dense(128, activation=tf.nn.relu), #first layer, 128 nodes
-#     keras.layers.Dense(10, activation=tf.nn.softmax) #second layer, 10 node "softmax layer" returns array of 10 
-# ])
-
-# #Compile the model
-# model.compile(optimizer=tf.train.AdamOptimizer(),
-# 			loss='sparse_categorical_crossentropy',
-# 			metrics=['accuracy'])
-
-# model.fit(train_images, train_labels, epochs = 5)
-
-# test_loss, test_acc = model.evaluate(test_images, test_labels)
-
-# print('Test accuracy:', test_acc)
-
-# predictions = model.predict(test_images)
-	
-# pre
+def test_confusion(x_test, y_test, model):
+	y_predict = model.predict(x_test)
+	y_predict = np.argmax(y_predict, axis=1)
+	return confusion_matrix(y_test, y_predict)
 
 
 def main():
-	if not os.path.isfile("train_test_data.pkl"):
-		load_data()
 
-	x_train, y_train, x_test, y_test, x_prune, y_prune= read_data()
+	x_train, y_train, x_test, y_test = prepare_data()
 
-	print(type(x_test))
-	print(type(x_prune))
-	print(x_test.shape)
+	model = train_model(x_train, y_train, 5)
+
+	print(test_confusion(x_test, y_test, model))
+
+	test_loss, test_acc = model.evaluate(x_test, y_test)
+
+	print('Test accuracy:', test_acc)
+	print('Log loss:', test_loss)
 
 
-if __name == '__main__':
+if __name__ == '__main__':
 	main()
 
 #https://www.tensorflow.org/tutorials/keras/basic_classification
+#https://machinelearningmastery.com/adam-optimization-algorithm-for-deep-learning/
+#https://stackoverflow.com/questions/44624334/tensorflow-how-to-display-confusion-matrix-tensor-as-an-array

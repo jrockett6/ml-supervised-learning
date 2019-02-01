@@ -11,7 +11,7 @@ def get_picture_resized(df_data, row_loc, pic_res):
 	img = Image.fromarray(data)
 	img = img.resize((pic_res, pic_res), resample=Image.BILINEAR)
 	new_arr = np.array(img)
-	new_arr.resize((1, 55*55))
+	new_arr.resize((1, pic_res*pic_res))
 
 	return new_arr
 
@@ -29,8 +29,11 @@ def resize_images(df_data, pic_res):
 	return new_arr
 
 
-def load_data():
-	image_res = 32
+def load_data(nn=False):
+	if not nn:
+		image_res = 55
+	else:
+		image_res = 55
 
 	train_data_labels = read_csv("data/train_labels.csv")
 	train_data_images = read_csv("data/train_images.csv", header=None)
@@ -39,42 +42,66 @@ def load_data():
 	test_data_images = read_csv("data/test_images.csv", header=None)
 
 	y_train = train_data_labels['Volcano?']
-	x_train = resize_images(train_data_images, image_res)
-
 	y_test = test_data_labels['Volcano?']
+
+	x_train = resize_images(train_data_images, image_res)
 	x_test = resize_images(test_data_images, image_res)
 
-	x_test, x_prune, y_test, y_prune = train_test_split(x_test, y_test, test_size=0.5, random_state=100)
+	if not nn:
+		x_test, x_prune, y_test, y_prune = train_test_split(x_test, y_test, test_size=0.5, random_state=0)
 
-	train_test_data = {'x_train': x_train, 
-					   'y_train': y_train,
-					   'x_test': x_test, 
-					   'y_test': y_test, 
-					   'x_prune': x_prune, 
-					   'y_prune': y_prune}
+		train_test_data = {'x_train': x_train, 
+						   'y_train': y_train,
+						   'x_test': x_test, 
+						   'y_test': y_test, 
+						   'x_prune': x_prune, 
+						   'y_prune': y_prune}
+		with open('train_test_data.pkl', 'wb') as output:
+			pickle.dump(train_test_data, output, -1)
 
-	with open('train_test_data.pkl', 'wb') as output:
-		pickle.dump(train_test_data, output, -1)
+	else:
+		train_test_data = {'x_train': x_train, 
+						   'y_train': y_train,
+						   'x_test': x_test, 
+						   'y_test': y_test}	
+		with open('train_test_data_nn.pkl', 'wb') as output:
+			pickle.dump(train_test_data, output, -1)	   
 
 	print('Training data for images loaded successfully')
 
 
-def read_data():
-	with open('train_test_data.pkl', 'rb') as input:
-		train_test_data = pickle.load(input)
+def read_data(nn=False):
+	if not nn:
+		with open('train_test_data.pkl', 'rb') as input:
+			train_test_data = pickle.load(input)
 
-	x_train = train_test_data['x_train']
-	y_train = train_test_data['y_train']
+		x_train = train_test_data['x_train']
+		y_train = train_test_data['y_train']
 
-	x_test = train_test_data['x_test']
-	y_test = train_test_data['y_test']
+		x_test = train_test_data['x_test']
+		y_test = train_test_data['y_test']
 
-	x_prune = train_test_data['x_prune']
-	y_prune= train_test_data['y_prune']
+		x_prune = train_test_data['x_prune']
+		y_prune= train_test_data['y_prune']
 
-	print('Training data read successfully')
+		print('Training data read successfully')
 
-	return x_train, y_train, x_test, y_test, x_prune, y_prune
+		return x_train, y_train, x_test, y_test, x_prune, y_prune
+	else:
+		with open('train_test_data_nn.pkl', 'rb') as input:
+			train_test_data = pickle.load(input)
+
+		x_train = train_test_data['x_train']
+		y_train = train_test_data['y_train']
+
+		x_test = train_test_data['x_test']
+		y_test = train_test_data['y_test']
+
+		print('Training data read successfully')
+
+		return x_train, y_train, x_test, y_test
+
+
 
 def view_picture(df_data, row_loc, pic_res=110):
 	data = (np.array((df_data.iloc[row_loc]), dtype=np.int8))

@@ -9,6 +9,7 @@ import os.path
 from manage_data import *
 from copy import deepcopy
 from sklearn import tree
+from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.tree._tree import TREE_LEAF
 
@@ -17,6 +18,9 @@ def test_accuracy(x_test, y_test, clf_obj):
 	y_predict = clf_obj.predict(x_test)
 	return accuracy_score(y_test, y_predict)*100
 
+def test_confusion(x_test, y_test, clf_obj):
+	y_predict = clf_obj.predict(x_test)
+	return confusion_matrix(y_test, y_predict)
 
 def post_prune(clf, x_prune, y_prune, index=0):
 	#Post prune tree while accuracy improves on test set
@@ -86,18 +90,21 @@ def main():
 
 	x_train, y_train, x_test, y_test, x_prune, y_prune= read_data()
 
-	# dtree_classifier_pre = tree.DecisionTreeClassifier(max_depth=12, random_state=0)
-	# clf = dtree_classifier_pre.fit(x_train, y_train)
-	# make_graph(clf, "pre_prune")
+	dtree_classifier_pre = tree.DecisionTreeClassifier(max_depth=12, random_state=0)
+	clf = dtree_classifier_pre.fit(x_train, y_train)
+	print(test_confusion(x_test, y_test, clf))
+	make_graph(clf, "pre_prune")
 
-	# dtree_classifier = tree.DecisionTreeClassifier(random_state=0)
-	# clf = dtree_classifier.fit(x_train, y_train)
-	# make_graph(clf, "no_prune")
+	dtree_classifier = tree.DecisionTreeClassifier(random_state=0)
+	clf = dtree_classifier.fit(x_train, y_train)
+	print(test_confusion(x_test, y_test, clf))
+	make_graph(clf, "no_prune")
 
-	# clf = post_prune(clf, x_prune, y_prune)
-	# make_graph(clf, "post_prune")
+	clf = post_prune(clf, x_prune, y_prune)
+	print(test_confusion(x_test, y_test, clf))
+	make_graph(clf, "post_prune")
 
-	plot_learning_curve(x_train, y_train, x_test, y_test, x_prune, y_prune)
+	# plot_learning_curve(x_train, y_train, x_test, y_test, x_prune, y_prune)
 
 
 if __name__=="__main__":
