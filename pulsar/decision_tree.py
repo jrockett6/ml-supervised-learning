@@ -12,10 +12,6 @@ from sklearn import tree
 from sklearn.tree._tree import TREE_LEAF
 
 
-def test_accuracy(x_test, y_test, clf_obj):
-	y_predict = clf_obj.predict(x_test)
-	return accuracy_score(y_test, y_predict)*100
-
 def post_prune(clf, x_prune, y_prune, index=0):
 	#Post prune tree while accuracy improves on test set
 	if clf.tree_.children_left[index] != TREE_LEAF:
@@ -26,7 +22,7 @@ def post_prune(clf, x_prune, y_prune, index=0):
 	new_clf = deepcopy(clf)
 	new_clf.tree_.children_left[index] = TREE_LEAF
 	new_clf.tree_.children_right[index] = TREE_LEAF
-	if test_accuracy(x_prune, y_prune, new_clf) >= test_accuracy(x_prune, y_prune, clf):
+	if test_metrics(x_prune, y_prune, new_clf) >= test_metrics(x_prune, y_prune, clf):
 		clf = new_clf
 	return clf
 
@@ -54,15 +50,15 @@ def plot_learning_curve(x_train, y_train, x_test, y_test, x_prune, y_prune):
 		for i in rng:
 			dtree_classifier_pre = tree.DecisionTreeClassifier(max_depth=12,random_state=0)
 			clf = dtree_classifier_pre.fit(x_train[:i], y_train[:i])
-			tot_list_pre[count] += test_accuracy(x_test, y_test, clf)
+			tot_list_pre[count] += test_metrics(x_test, y_test, clf)
 
 			dtree_classifier = tree.DecisionTreeClassifier(random_state=0)
 			clf = dtree_classifier.fit(x_train[:i], y_train[:i])
-			tot_list[count] += test_accuracy(x_test, y_test, clf)
+			tot_list[count] += test_metrics(x_test, y_test, clf)
 
 			clf = post_prune(clf, x_prune, y_prune)
-			tot_list_post[count] += test_accuracy(x_test, y_test, clf)
-			tot_list_post_train[count] += test_accuracy(x_train, y_train, clf)
+			tot_list_post[count] += test_metrics(x_test, y_test, clf)
+			tot_list_post_train[count] += test_metrics(x_train, y_train, clf)
 
 			count += 1
 
@@ -71,7 +67,8 @@ def plot_learning_curve(x_train, y_train, x_test, y_test, x_prune, y_prune):
 	tot_list_post = [i/trials for i in tot_list_post]
 	tot_list_post_train = [i/trials for i in tot_list_post_train]
 
-	test_metrics(x_test, y_test, clf)
+	test_metrics(x_test, y_test, clf, do_print=True)
+	# print(test_accuracy(x_test, y_test, clf))
 
 	plt.plot(rng, tot_list, color= '#9CBA7F', linewidth=2)
 	plt.plot(rng, tot_list_pre, color= '#8A2BE2', linewidth=2)
@@ -80,42 +77,42 @@ def plot_learning_curve(x_train, y_train, x_test, y_test, x_prune, y_prune):
 	plt.title('Decision Tree Learning Curve')
 	plt.legend(["No Prune (test)", "Pre Prune (test)", "Post Prune (test)", "Post Prune (train)"], loc='lower right')
 	plt.xlabel('# of Training Points')
-	plt.ylabel('Accuracy')
+	plt.ylabel('F-measure')
 	plt.grid(True)
 	plt.show()
 	plt.savefig("out_data/d_tree_learning_curve")
 
 
 def main():
-	print('\n\n_______________________________________')
-	print('Decision Tree - Volcanoes on Venus')
+	# data = read_csv("data/pulsar_stars.csv")
+	# view_data(data)
+	print('\n\n____________________________________')
+	print('Decision Tree - Pulsar Stars')
 
 	if not os.path.isfile("train_test_data_dtree.pkl"):
 		load_data(dtree=True)
 
-	x_train, y_train, x_test, y_test, x_prune, y_prune= read_data(dtree=True)
+	x_train, y_train, x_test, y_test, x_prune, y_prune = read_data(dtree=True)
 
-	print('\nPre Pruned Metrics')
-	print('------------------')
 	dtree_classifier_pre = tree.DecisionTreeClassifier(max_depth=12, random_state=0)
 	clf = dtree_classifier_pre.fit(x_train, y_train)
-	test_metrics(x_test, y_test, clf)
-	# # make_graph(clf, "pre_prune")
+	print("\n\nPre pruned tree\n- - - - - - - - - - - - - ")
+	test_metrics(x_test, y_test, clf, do_print=True)
+	# make_graph(clf, "pre_prune")
 
-	print('\nNo Pruned Metrics')
-	print('-----------------')
 	dtree_classifier = tree.DecisionTreeClassifier(random_state=0)
 	clf = dtree_classifier.fit(x_train, y_train)
-	test_metrics(x_test, y_test, clf)
-	# # make_graph(clf, "no_prune")
+	print("\nNo pruned tree\n- - - - - - - - - - - - - ")
+	test_metrics(x_test, y_test, clf, do_print=True)
+	# make_graph(clf, "no_prune")
 
-	print('\nPost Pruned Metrics')
-	print('-------------------')
 	clf = post_prune(clf, x_prune, y_prune)
-	test_metrics(x_test, y_test, clf)
+	print("\nPost pruned tree\n- - - - - - - - - - - - - ")
+	test_metrics(x_test, y_test, clf, do_print=True)
 	# make_graph(clf, "post_prune")
 
 	# plot_learning_curve(x_train, y_train, x_test, y_test, x_prune, y_prune)
+
 
 if __name__=="__main__":
 	main()
